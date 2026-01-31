@@ -1,2 +1,1 @@
-# cross-roads
-1 hour crossy road challenge
+# do you cross roads, or do roads cross you?
