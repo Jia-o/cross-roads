@@ -1,0 +1,4 @@
+Model: I used claude pro (!!!)
+Strategy: I gave it creative freedom (because I know nothing about crossyroad) and then helped it debug by pasting the relevant lines of code into my prompts. I debugged each existing feature before adding new ones.
+Prompts: docs.google.com/document/d/1hZmkFNeqPArOeCj2Wp_XqdhcN2vRBteQ8qQpdX0y3Rg
+Process and Demo: 
