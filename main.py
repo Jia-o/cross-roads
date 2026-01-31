@@ -1,10 +1,12 @@
 from cmu_graphics import *
 import random
+import math
 
 # Game constants
 GRID_SIZE = 40
 PLAYER_START_ROW = 140
 LANE_WIDTH = GRID_SIZE
+WIN_SCORE = 50  # Score needed to win the level
 
 # Game state
 class GameState:
@@ -16,6 +18,8 @@ class GameState:
         self.camera_offset = 0
         self.furthest_row = PLAYER_START_ROW  # Track the furthest row reached
         self.character = 'duck'  # Can be 'duck', 'frog', or 'fish'
+        self.death_type = None  # 'road' or 'water'
+        self.death_animation_frame = 0  # Track animation progress
         self.lanes = []
         self.init_lanes()
     
@@ -178,7 +182,8 @@ def game_onScreenActivate(app):
 
 def game_onKeyPress(app, key):
     if game.game_over:
-        if key == 'r':
+        # Only allow restart after animation completes
+        if key == 'r' and game.death_animation_frame >= 30:
             setActiveScreen('start')
         return
     
@@ -216,6 +221,9 @@ def game_onKeyPress(app, key):
 
 def game_onStep(app):
     if game.game_over:
+        # Increment death animation frame
+        if game.death_animation_frame < 30:
+            game.death_animation_frame += 1
         return
     
     # Update vehicles and logs
@@ -241,6 +249,7 @@ def game_onStep(app):
                 if (lane_idx == game.player_row and 
                     abs(vehicle['col'] - game.player_col) < 0.8):
                     game.game_over = True
+                    game.death_type = 'road'
         
         elif lane['type'] == 'water':
             # Add logs
@@ -280,6 +289,7 @@ def game_onStep(app):
                 # If not on a log in water, player drowns
                 if not on_log:
                     game.game_over = True
+                    game.death_type = 'water'
 
 def drawLane(row, lane, screen_y):
     if lane['type'] == 'grass':
@@ -342,6 +352,11 @@ def drawPlayer(col, screen_y):
     x = col * GRID_SIZE
     y = screen_y + LANE_WIDTH // 2
     
+    # If game is over, show death animation
+    if game.game_over and game.death_type:
+        drawDeathAnimation(x, y)
+        return
+    
     if game.character == 'duck':
         # Draw duck (yellow character)
         drawCircle(x, y - 5, 8, fill='yellow', border='orange', borderWidth=2)  # Head
@@ -365,6 +380,124 @@ def drawPlayer(col, screen_y):
         drawPolygon(x + 10, y, x + 16, y - 6, x + 16, y + 6, fill='blue', border='darkBlue', borderWidth=2)  # Tail
         drawCircle(x - 5, y, 3, fill='white', border='black', borderWidth=1)  # Eye
         drawCircle(x - 5, y, 1, fill='black')  # Pupil
+
+def drawDeathAnimation(x, y):
+    frame = game.death_animation_frame
+    
+    if game.death_type == 'road':
+        # Road death - squashed/impact animation
+        if game.character == 'duck':
+            # Duck gets flattened
+            squash = min(frame / 10, 2)
+            width = max(1, 20 + squash * 10)
+            height = max(1, 15 - squash * 8)
+            opacity = max(0, 100 - frame * 3)
+            drawOval(x, y, width, height, fill='yellow', opacity=opacity)
+            drawCircle(x - 5, y, 2, fill='black', opacity=opacity)
+            drawCircle(x + 5, y, 2, fill='black', opacity=opacity)
+            # Feathers flying
+            if frame < 20:
+                for i in range(3):
+                    offset_x = (frame - i * 3) * 2
+                    offset_y = -frame + i * 5
+                    feather_opacity = max(0, 100 - frame * 5)
+                    drawCircle(x + offset_x, y + offset_y, 3, fill='yellow', opacity=feather_opacity)
+        
+        elif game.character == 'frog':
+            # Frog gets squashed
+            squash = min(frame / 10, 2)
+            width = max(1, 25 + squash * 10)
+            height = max(1, 12 - squash * 6)
+            opacity = max(0, 100 - frame * 3)
+            drawOval(x, y, width, height, fill='green', opacity=opacity)
+            drawCircle(x - 5, y - 5, 3, fill='lightGreen', opacity=opacity)
+            drawCircle(x + 5, y - 5, 3, fill='lightGreen', opacity=opacity)
+            # Stars/dazed effect
+            if frame < 15:
+                for i in range(4):
+                    angle = (frame * 20 + i * 90) % 360
+                    star_x = x + 15 * math.cos(math.radians(angle))
+                    star_y = y - 20 + 15 * math.sin(math.radians(angle))
+                    star_opacity = max(0, 100 - frame * 6)
+                    drawStar(star_x, star_y, 5, 5, fill='yellow', opacity=star_opacity)
+        
+        elif game.character == 'fish':
+            # Fish gets flattened
+            squash = min(frame / 10, 2)
+            width = max(1, 25 + squash * 10)
+            height = max(1, 10 - squash * 5)
+            opacity = max(0, 100 - frame * 3)
+            drawOval(x, y, width, height, fill='blue', opacity=opacity)
+            drawCircle(x - 5, y, 2, fill='white', opacity=opacity)
+            # Bubbles
+            if frame < 20:
+                for i in range(3):
+                    bubble_y = y - frame * 2 - i * 10
+                    bubble_x = x + (i - 1) * 8
+                    bubble_opacity = max(0, 100 - frame * 5)
+                    drawCircle(bubble_x, bubble_y, 4, fill='lightBlue', opacity=bubble_opacity)
+    
+    elif game.death_type == 'water':
+        # Water death - sinking/drowning animation
+        sink_amount = min(frame * 2, 40)
+        
+        if game.character == 'duck':
+            # Duck sinks with bubbles
+            opacity = max(0, 100 - frame * 3)
+            drawCircle(x, y + sink_amount - 5, 8, fill='yellow', border='orange', borderWidth=2, opacity=opacity)
+            drawCircle(x, y + sink_amount + 5, 10, fill='yellow', border='orange', borderWidth=2, opacity=opacity)
+            # X eyes when drowning
+            drawLine(x - 5, y + sink_amount - 7, x - 1, y + sink_amount - 5, fill='black', lineWidth=2, opacity=opacity)
+            drawLine(x - 1, y + sink_amount - 7, x - 5, y + sink_amount - 5, fill='black', lineWidth=2, opacity=opacity)
+            drawLine(x + 1, y + sink_amount - 7, x + 5, y + sink_amount - 5, fill='black', lineWidth=2, opacity=opacity)
+            drawLine(x + 5, y + sink_amount - 7, x + 1, y + sink_amount - 5, fill='black', lineWidth=2, opacity=opacity)
+            # Bubbles rising
+            if frame < 25:
+                for i in range(4):
+                    bubble_y = y - frame * 1.5 + i * 10
+                    bubble_x = x + (i % 2) * 8 - 4
+                    bubble_size = max(1, 3 + i)
+                    bubble_opacity = max(0, 100 - frame * 4)
+                    drawCircle(bubble_x, bubble_y, bubble_size, fill='lightBlue', opacity=bubble_opacity)
+        
+        elif game.character == 'frog':
+            # Frog actually swims initially then sinks
+            if frame < 10:
+                # Swimming motion
+                bob = frame % 4 - 2
+                drawCircle(x, y + bob, 12, fill='green', border='darkGreen', borderWidth=2)
+                drawCircle(x - 5, y + bob - 3, 5, fill='lightGreen', border='darkGreen', borderWidth=1)
+                drawCircle(x + 5, y + bob - 3, 5, fill='lightGreen', border='darkGreen', borderWidth=1)
+            else:
+                # Then sinks
+                opacity = max(0, 100 - frame * 2)
+                drawCircle(x, y + sink_amount, 12, fill='green', border='darkGreen', borderWidth=2, opacity=opacity)
+                # X eyes
+                drawLine(x - 7, y + sink_amount - 4, x - 3, y + sink_amount - 2, fill='black', lineWidth=2, opacity=opacity)
+                drawLine(x - 3, y + sink_amount - 4, x - 7, y + sink_amount - 2, fill='black', lineWidth=2, opacity=opacity)
+                drawLine(x + 3, y + sink_amount - 4, x + 7, y + sink_amount - 2, fill='black', lineWidth=2, opacity=opacity)
+                drawLine(x + 7, y + sink_amount - 4, x + 3, y + sink_amount - 2, fill='black', lineWidth=2, opacity=opacity)
+            # Bubbles
+            if frame < 25:
+                for i in range(3):
+                    bubble_y = y - frame * 1.5 + i * 12
+                    bubble_x = x + (i - 1) * 6
+                    bubble_opacity = max(0, 100 - frame * 4)
+                    drawCircle(bubble_x, bubble_y, 4, fill='lightBlue', opacity=bubble_opacity)
+        
+        elif game.character == 'fish':
+            # Fish floats upside down (ironic death)
+            float_y = y - frame * 1.5
+            opacity = max(0, 100 - frame * 3)
+            drawOval(x, float_y, 20, 12, fill='blue', border='darkBlue', borderWidth=2, opacity=opacity, rotateAngle=180)
+            drawCircle(x - 5, float_y, 2, fill='white', opacity=opacity)
+            # Bubbles
+            if frame < 20:
+                for i in range(3):
+                    bubble_y = float_y - 10 - i * 8
+                    bubble_size = max(1, 3 + i)
+                    bubble_opacity = max(0, 100 - frame * 5)
+                    drawCircle(x, bubble_y, bubble_size, fill='lightBlue', opacity=bubble_opacity)
 
 def game_redrawAll(app):
     # Background
@@ -399,7 +532,8 @@ def game_redrawAll(app):
     drawRect(0, 0, 400, 40, fill='black', opacity=70)
     drawLabel(f'Score: {game.score}', 200, 20, size=20, fill='white', bold=True)
     
-    if game.game_over:
+    # Only show game over screen after death animation completes
+    if game.game_over and game.death_animation_frame >= 30:
         drawRect(0, 0, 400, 400, fill='black', opacity=80)
         drawLabel('GAME OVER!', 200, 150, size=40, fill='red', bold=True)
         drawLabel(f'Final Score: {game.score}', 200, 200, size=25, fill='white', bold=True)
