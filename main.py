@@ -5,7 +5,6 @@ import random
 GRID_SIZE = 40
 PLAYER_START_ROW = 140
 LANE_WIDTH = GRID_SIZE
-WIN_SCORE = 50  # Score needed to win the level
 
 # Game state
 class GameState:
@@ -16,6 +15,7 @@ class GameState:
         self.game_over = False
         self.camera_offset = 0
         self.furthest_row = PLAYER_START_ROW  # Track the furthest row reached
+        self.character = 'duck'  # Can be 'duck', 'frog', or 'fish'
         self.lanes = []
         self.init_lanes()
     
@@ -83,16 +83,103 @@ game = GameState()
 
 def onAppStart(app):
     app.stepsPerSecond = 30
-    reset()
+    app.selectedCharacter = 'duck'  # Store selected character in app
 
-def reset():
+def reset(app):
     global game
     game = GameState()
+    game.character = app.selectedCharacter  # Use the selected character
 
-def onKeyPress(app, key):
+############################################################
+# Character Selection Screen
+############################################################
+def start_redrawAll(app):
+    # Background
+    drawRect(0, 0, 400, 400, fill=rgb(135, 206, 235))
+    
+    # Title
+    drawLabel('CROSSY ROAD', 200, 50, size=40, fill='white', bold=True)
+    drawLabel('Select Your Character', 200, 100, size=20, fill='white')
+    
+    # Character boxes
+    box_y = 200
+    box_width = 100
+    box_height = 120
+    
+    # Duck
+    duck_x = 70
+    if app.selectedCharacter == 'duck':
+        drawRect(duck_x - box_width//2, box_y - box_height//2, box_width, box_height, 
+                fill='gold', border='yellow', borderWidth=4)
+    else:
+        drawRect(duck_x - box_width//2, box_y - box_height//2, box_width, box_height, 
+                fill='white', border='gray', borderWidth=2)
+    drawCircle(duck_x, box_y - 15, 8, fill='yellow', border='orange', borderWidth=2)
+    drawCircle(duck_x, box_y - 5, 10, fill='yellow', border='orange', borderWidth=2)
+    drawCircle(duck_x - 3, box_y - 17, 2, fill='black')
+    drawCircle(duck_x + 3, box_y - 17, 2, fill='black')
+    drawPolygon(duck_x, box_y - 13, duck_x - 3, box_y - 11, duck_x + 3, box_y - 11, fill='orange')
+    drawLabel('Duck', duck_x, box_y + 30, size=16, bold=True)
+    drawLabel('Press 1', duck_x, box_y + 45, size=12)
+    
+    # Frog
+    frog_x = 200
+    if app.selectedCharacter == 'frog':
+        drawRect(frog_x - box_width//2, box_y - box_height//2, box_width, box_height, 
+                fill='gold', border='yellow', borderWidth=4)
+    else:
+        drawRect(frog_x - box_width//2, box_y - box_height//2, box_width, box_height, 
+                fill='white', border='gray', borderWidth=2)
+    drawCircle(frog_x, box_y - 10, 12, fill='green', border='darkGreen', borderWidth=2)
+    drawCircle(frog_x - 5, box_y - 13, 5, fill='lightGreen', border='darkGreen', borderWidth=1)
+    drawCircle(frog_x + 5, box_y - 13, 5, fill='lightGreen', border='darkGreen', borderWidth=1)
+    drawCircle(frog_x - 5, box_y - 13, 2, fill='black')
+    drawCircle(frog_x + 5, box_y - 13, 2, fill='black')
+    drawRect(frog_x - 2, box_y - 5, 4, 2, fill='darkGreen')
+    drawLabel('Frog', frog_x, box_y + 30, size=16, bold=True)
+    drawLabel('Press 2', frog_x, box_y + 45, size=12)
+    
+    # Fish
+    fish_x = 330
+    if app.selectedCharacter == 'fish':
+        drawRect(fish_x - box_width//2, box_y - box_height//2, box_width, box_height, 
+                fill='gold', border='yellow', borderWidth=4)
+    else:
+        drawRect(fish_x - box_width//2, box_y - box_height//2, box_width, box_height, 
+                fill='white', border='gray', borderWidth=2)
+    drawOval(fish_x, box_y - 10, 20, 12, fill='blue', border='darkBlue', borderWidth=2)
+    drawPolygon(fish_x + 10, box_y - 10, fish_x + 16, box_y - 16, fish_x + 16, box_y - 4, 
+                fill='blue', border='darkBlue', borderWidth=2)
+    drawCircle(fish_x - 5, box_y - 10, 3, fill='white', border='black', borderWidth=1)
+    drawCircle(fish_x - 5, box_y - 10, 1, fill='black')
+    drawLabel('Fish', fish_x, box_y + 30, size=16, bold=True)
+    drawLabel('Press 3', fish_x, box_y + 45, size=12)
+    
+    # Start instruction
+    drawLabel('Press SPACE to Start!', 200, 320, size=24, fill='white', bold=True)
+
+def start_onKeyPress(app, key):
+    if key == '1':
+        app.selectedCharacter = 'duck'
+    elif key == '2':
+        app.selectedCharacter = 'frog'
+    elif key == '3':
+        app.selectedCharacter = 'fish'
+    elif key == 'space':
+        reset(app)
+        setActiveScreen('game')
+
+############################################################
+# Game Screen
+############################################################
+def game_onScreenActivate(app):
+    # Game is already reset when we switch screens
+    pass
+
+def game_onKeyPress(app, key):
     if game.game_over:
         if key == 'r':
-            reset()
+            setActiveScreen('start')
         return
     
     old_row = game.player_row
@@ -127,7 +214,7 @@ def onKeyPress(app, key):
         while len(game.lanes) - game.player_row < 10:
             game.add_lane()
 
-def onStep(app):
+def game_onStep(app):
     if game.game_over:
         return
     
@@ -255,14 +342,31 @@ def drawPlayer(col, screen_y):
     x = col * GRID_SIZE
     y = screen_y + LANE_WIDTH // 2
     
-    # Draw simple character (chicken style)
-    drawCircle(x, y - 5, 8, fill='yellow', border='orange', borderWidth=2)  # Head
-    drawCircle(x, y + 5, 10, fill='yellow', border='orange', borderWidth=2)  # Body
-    drawCircle(x - 3, y - 7, 2, fill='black')  # Eye
-    drawCircle(x + 3, y - 7, 2, fill='black')  # Eye
-    drawPolygon(x, y - 3, x - 3, y - 1, x + 3, y - 1, fill='orange')  # Beak
+    if game.character == 'duck':
+        # Draw duck (yellow character)
+        drawCircle(x, y - 5, 8, fill='yellow', border='orange', borderWidth=2)  # Head
+        drawCircle(x, y + 5, 10, fill='yellow', border='orange', borderWidth=2)  # Body
+        drawCircle(x - 3, y - 7, 2, fill='black')  # Eye
+        drawCircle(x + 3, y - 7, 2, fill='black')  # Eye
+        drawPolygon(x, y - 3, x - 3, y - 1, x + 3, y - 1, fill='orange')  # Beak
+    
+    elif game.character == 'frog':
+        # Draw frog (green character)
+        drawCircle(x, y, 12, fill='green', border='darkGreen', borderWidth=2)  # Body
+        drawCircle(x - 5, y - 3, 5, fill='lightGreen', border='darkGreen', borderWidth=1)  # Left eye
+        drawCircle(x + 5, y - 3, 5, fill='lightGreen', border='darkGreen', borderWidth=1)  # Right eye
+        drawCircle(x - 5, y - 3, 2, fill='black')  # Left pupil
+        drawCircle(x + 5, y - 3, 2, fill='black')  # Right pupil
+        drawRect(x - 2, y + 5, 4, 2, fill='darkGreen')  # Mouth
+    
+    elif game.character == 'fish':
+        # Draw fish (blue character)
+        drawOval(x, y, 20, 12, fill='blue', border='darkBlue', borderWidth=2)  # Body
+        drawPolygon(x + 10, y, x + 16, y - 6, x + 16, y + 6, fill='blue', border='darkBlue', borderWidth=2)  # Tail
+        drawCircle(x - 5, y, 3, fill='white', border='black', borderWidth=1)  # Eye
+        drawCircle(x - 5, y, 1, fill='black')  # Pupil
 
-def redrawAll(app):
+def game_redrawAll(app):
     # Background
     drawRect(0, 0, 400, 400, fill=rgb(135, 206, 235))  # Sky blue
     
@@ -301,4 +405,10 @@ def redrawAll(app):
         drawLabel(f'Final Score: {game.score}', 200, 200, size=25, fill='white', bold=True)
         drawLabel('Press R to Restart', 200, 250, size=20, fill='white')
 
-runApp(width=400, height=400)
+############################################################
+# Main
+############################################################
+def main():
+    runAppWithScreens(initialScreen='start', width=400, height=400)
+
+main()
