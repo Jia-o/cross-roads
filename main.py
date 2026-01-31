@@ -99,19 +99,19 @@ def reset(app):
 ############################################################
 def start_redrawAll(app):
     # Background
-    drawRect(0, 0, 400, 400, fill=rgb(135, 206, 235))
+    drawRect(0, 0, 600, 600, fill=rgb(135, 206, 235))
     
     # Title
-    drawLabel('CROSSY ROAD', 200, 50, size=40, fill='white', bold=True)
-    drawLabel('Select Your Character', 200, 100, size=20, fill='white')
+    drawLabel('CROSSY ROAD', 300, 80, size=50, fill='white', bold=True)
+    drawLabel('Select Your Character', 300, 150, size=25, fill='white')
     
     # Character boxes
-    box_y = 200
-    box_width = 100
-    box_height = 120
+    box_y = 300
+    box_width = 140
+    box_height = 160
     
     # Duck
-    duck_x = 70
+    duck_x = 120
     if app.selectedCharacter == 'duck':
         drawRect(duck_x - box_width//2, box_y - box_height//2, box_width, box_height, 
                 fill='gold', border='yellow', borderWidth=4)
@@ -127,7 +127,7 @@ def start_redrawAll(app):
     drawLabel('Press 1', duck_x, box_y + 45, size=12)
     
     # Frog
-    frog_x = 200
+    frog_x = 300
     if app.selectedCharacter == 'frog':
         drawRect(frog_x - box_width//2, box_y - box_height//2, box_width, box_height, 
                 fill='gold', border='yellow', borderWidth=4)
@@ -144,7 +144,7 @@ def start_redrawAll(app):
     drawLabel('Press 2', frog_x, box_y + 45, size=12)
     
     # Fish
-    fish_x = 330
+    fish_x = 480
     if app.selectedCharacter == 'fish':
         drawRect(fish_x - box_width//2, box_y - box_height//2, box_width, box_height, 
                 fill='gold', border='yellow', borderWidth=4)
@@ -160,7 +160,7 @@ def start_redrawAll(app):
     drawLabel('Press 3', fish_x, box_y + 45, size=12)
     
     # Start instruction
-    drawLabel('Press SPACE to Start!', 200, 320, size=24, fill='white', bold=True)
+    drawLabel('Press SPACE to Start!', 300, 480, size=30, fill='white', bold=True)
 
 def start_onKeyPress(app, key):
     if key == '1':
@@ -294,26 +294,26 @@ def game_onStep(app):
 def drawLane(row, lane, screen_y):
     if lane['type'] == 'grass':
         fill = rgb(100, 200, 100)
-        drawRect(0, screen_y, 400, LANE_WIDTH, fill=fill)
+        drawRect(0, screen_y, 600, LANE_WIDTH, fill=fill)
         # Draw some grass details
-        for i in range(0, 400, 20):
+        for i in range(0, 600, 20):
             drawCircle(i + 10, screen_y + 15, 3, fill=rgb(80, 180, 80))
             drawCircle(i + 5, screen_y + 25, 2, fill=rgb(80, 180, 80))
     elif lane['type'] == 'water':
         # Water
         fill = rgb(50, 150, 200)
-        drawRect(0, screen_y, 400, LANE_WIDTH, fill=fill)
+        drawRect(0, screen_y, 600, LANE_WIDTH, fill=fill)
         # Water ripples
-        for i in range(0, 400, 30):
+        for i in range(0, 600, 30):
             drawOval(i + 15, screen_y + 10, 20, 8, fill=rgb(70, 170, 220), opacity=50)
             drawOval(i + 5, screen_y + 25, 15, 6, fill=rgb(70, 170, 220), opacity=50)
     else:
         # Road
         fill = rgb(60, 60, 70)
-        drawRect(0, screen_y, 400, LANE_WIDTH, fill=fill)
+        drawRect(0, screen_y, 600, LANE_WIDTH, fill=fill)
         # Road markings
         if row % 2 == 0:
-            for i in range(0, 400, 40):
+            for i in range(0, 600, 40):
                 drawRect(i, screen_y + LANE_WIDTH//2 - 2, 20, 4, 
                         fill='white', opacity=50)
 
@@ -501,7 +501,7 @@ def drawDeathAnimation(x, y):
 
 def game_redrawAll(app):
     # Background
-    drawRect(0, 0, 400, 400, fill=rgb(135, 206, 235))  # Sky blue
+    drawRect(0, 0, 600, 600, fill=rgb(135, 206, 235))  # Sky blue
     
     # Calculate visible lanes
     start_row = max(0, game.player_row - 7 + game.camera_offset)
@@ -529,20 +529,20 @@ def game_redrawAll(app):
     drawPlayer(game.player_col, player_y)
     
     # Draw UI
-    drawRect(0, 0, 400, 40, fill='black', opacity=70)
-    drawLabel(f'Score: {game.score}', 200, 20, size=20, fill='white', bold=True)
+    drawRect(0, 0, 600, 50, fill='black', opacity=70)
+    drawLabel(f'Score: {game.score}', 300, 25, size=24, fill='white', bold=True)
     
     # Only show game over screen after death animation completes
     if game.game_over and game.death_animation_frame >= 30:
-        drawRect(0, 0, 400, 400, fill='black', opacity=80)
-        drawLabel('GAME OVER!', 200, 150, size=40, fill='red', bold=True)
-        drawLabel(f'Final Score: {game.score}', 200, 200, size=25, fill='white', bold=True)
-        drawLabel('Press R to Restart', 200, 250, size=20, fill='white')
+        drawRect(0, 0, 600, 600, fill='black', opacity=80)
+        drawLabel('GAME OVER!', 300, 230, size=50, fill='red', bold=True)
+        drawLabel(f'Final Score: {game.score}', 300, 300, size=30, fill='white', bold=True)
+        drawLabel('Press R to Restart', 300, 370, size=25, fill='white')
 
 ############################################################
 # Main
 ############################################################
 def main():
-    runAppWithScreens(initialScreen='start', width=400, height=400)
+    runAppWithScreens(initialScreen='start', width=600, height=600)
 
 main()
